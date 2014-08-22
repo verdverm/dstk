@@ -28,31 +28,19 @@ func main() {
 		},
 		cli.IntFlag{
 			Name:   "slaves",
-			Value:  3,
+			Value:  1,
 			Usage:  "number of slave nodes",
 			EnvVar: "DTSK_SLAVES",
 		},
 	}
 
-	// app.Before = func(c *cli.Context) error {
-	// 	name := "someone"
-	// 	if len(c.Args()) > 0 {
-	// 		name = c.Args()[0]
-	// 	}
-	// 	if c.String("lang") == "spanish" {
-	// 		println("Hola", name)
-	// 	} else {
-	// 		println("Hello", name)
-	// 	}
-	// 	println("cname:", c.String("clustername"))
-	// 	return nil
-	// }
+	app.Before = commands.InitDstk
 
 	app.Commands = []cli.Command{
 		{
-			Name:   "initialize",
+			Name:   "setup",
 			Usage:  "setup the dstk configuration",
-			Action: commands.InitializeDSTK,
+			Action: commands.SetupDstk,
 		},
 		{
 			Name:   "config",
@@ -86,11 +74,9 @@ func main() {
 					Action: commands.DestroyCluster,
 				},
 				{
-					Name:  "status",
-					Usage: "print status of clusters",
-					Action: func(c *cli.Context) {
-						println("printing status of clusters")
-					},
+					Name:   "status",
+					Usage:  "print status of clusters",
+					Action: commands.PrintClusterStatus,
 				},
 			},
 		},
