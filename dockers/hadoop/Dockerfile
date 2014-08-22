@@ -1,14 +1,15 @@
-FROM verdverm/java:latest
+FROM verdverm/dtsk-java
 MAINTAINER Tony Worm verdverm@gmail.com
 # adapted from
 # http://www.alexjf.net/blog/distributed-systems/hadoop-yarn-installation-definitive-guide
 
 # install hadoop 2.4.1
 RUN mkdir -p /apache
-WORKDIR /apache
 # RUN curl http://mirror.reverse.net/pub/apache/hadoop/common/hadoop-2.4.1/hadoop-2.4.1.tar.gz | tar xz
 ADD hadoop-2.4.1.tar.gz /apache/hadoop-2.4.1.tar.gz
-RUN tar xzf hadoop-2.4.1.tar.gz
+
+WORKDIR /apache
+RUN tar xzf /apache/hadoop-2.4.1.tar.gz
 
 ENV HADOOP_PREFIX       /apache/hadoop-2.4.1
 ENV HADOOP_HOME         $HADOOP_PREFIX

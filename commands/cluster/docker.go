@@ -174,7 +174,50 @@ func launchDockerNeo4j() {
 }
 
 func launchDockerSparkMaster() {
+	// create options
+	copts := docker.CreateContainerOptions{
+		Name: "spark-master",
+		Config: &docker.Config{
+			Image: "verdverm/spark",
+			ExposedPorts: map[docker.Port]struct{}{
+				docker.Port("8080"): {},
+				docker.Port("7077"): {},
+			},
+		},
+	}
 
+	// start options for:
+	sopts := &docker.HostConfig{
+		ContainerIDFile: "verdverm/spark",
+		Privileged:      true,
+		PortBindings: map[docker.Port][]docker.PortBinding{
+			docker.Port("8080"): {
+				docker.PortBinding{
+					HostIp:   "0.0.0.0",
+					HostPort: "8080",
+				},
+			},
+			docker.Port("7077"): {
+				docker.PortBinding{
+					HostIp:   "0.0.0.0",
+					HostPort: "7077",
+				},
+			},
+		},
+	}
+
+	client, err := docker.NewClient(endpoint)
+	panicErr(err)
+
+	fmt.Println("  - Creating Neo4j container")
+	_, err = client.CreateContainer(copts)
+	panicErr(err)
+
+	fmt.Println("  - Starting Neo4j container")
+	err = client.StartContainer("neo4j", sopts)
+	panicErr(err)
+
+	fmt.Println("  - Successfully started Neo4j docker")
 }
 
 func launchDockerSparkSlaves() {
