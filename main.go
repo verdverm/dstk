@@ -50,6 +50,28 @@ func main() {
 
 	app.Commands = []cli.Command{
 		{
+			Name:   "initialize",
+			Usage:  "setup the dstk configuration",
+			Action: commands.InitializeDSTK,
+		},
+		{
+			Name:   "config",
+			Usage:  "print or alter dstk config values",
+			Action: commands.PrintConfigValues,
+			Subcommands: []cli.Command{
+				{
+					Name:   "set",
+					Usage:  "dstk config set <key> <value>",
+					Action: commands.SetConfigValue,
+				},
+				{
+					Name:   "get",
+					Usage:  "dstk config get <key> <value>",
+					Action: commands.GetConfigValue,
+				},
+			},
+		},
+		{
 			Name:  "cluster",
 			Usage: "options for cluster management",
 			Subcommands: []cli.Command{
