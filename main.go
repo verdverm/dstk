@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/verdverm/dstk/src/dstk/commands"
+	"github.com/verdverm/dstk/commands"
 )
 
 func main() {

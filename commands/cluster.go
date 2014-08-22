@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/codegangsta/cli"
-	"github.com/verdverm/dstk/src/dstk/commands/cluster"
+	"github.com/verdverm/dstk/commands/cluster"
 )
 
 func LaunchCluster(c *cli.Context) {
