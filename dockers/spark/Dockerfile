@@ -1,18 +1,9 @@
-FROM verdverm/dtsk-hadoop
+FROM verdverm/dstk-hadoop
 MAINTAINER Tony Worm verdverm@gmail.com
 
-# install spark 1.0.2
-ADD spark-1.0.2-bin-hadoop2.tgz /apache/spark-1.0.2-bin-hadoop2.tgz
-# RUN curl http://mirror.reverse.net/pub/apache/spark/spark-1.0.2/spark-1.0.2-bin-hadoop2.tgz > spark-1.0.2-bin-hadoop2.tgz
-
-WORKDIR /apache
-RUN tar zxf spark-1.0.2-bin-hadoop2.tgz
-
-# setup spark configuration
-WORKDIR /apache/spark-1.0.2-bin-hadoop2
-# RUN echo "localhost" >> conf/slaves
-
 RUN apt-get install --no-install-recommends -y openssh-server
+
+ADD spark-1.0.2-bin-hadoop2 /apache/spark-1.0.2-bin-hadoop2
 
 EXPOSE 8080 7077 22
 

@@ -15,22 +15,28 @@ func main() {
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:   "provider",
+			Name:   "provider,p",
 			Value:  "docker",
 			Usage:  "cluster provider [docker] [...,vagrant,gce,aws]",
 			EnvVar: "DTSK_PROVIDER",
 		},
+		cli.IntFlag{
+			Name:   "slaves,s",
+			Value:  1,
+			Usage:  "number of slave nodes",
+			EnvVar: "DTSK_SLAVES",
+		},
 		cli.StringFlag{
-			Name:   "clustername,n",
+			Name:   "clustername,c",
 			Value:  "default",
 			Usage:  "cluster name",
 			EnvVar: "DTSK_CLUSTER",
 		},
-		cli.IntFlag{
-			Name:   "slaves",
-			Value:  1,
-			Usage:  "number of slave nodes",
-			EnvVar: "DTSK_SLAVES",
+		cli.StringFlag{
+			Name:   "jobname,j",
+			Value:  "default",
+			Usage:  "cluster name",
+			EnvVar: "DTSK_CLUSTER",
 		},
 	}
 
@@ -49,12 +55,12 @@ func main() {
 			Subcommands: []cli.Command{
 				{
 					Name:   "set",
-					Usage:  "dstk config set <key> <value>",
+					Usage:  "config set <key> <value>",
 					Action: commands.SetConfigValue,
 				},
 				{
 					Name:   "get",
-					Usage:  "dstk config get <key> <value>",
+					Usage:  "config get <key> <value>",
 					Action: commands.GetConfigValue,
 				},
 			},
@@ -64,49 +70,59 @@ func main() {
 			Usage: "options for cluster management",
 			Subcommands: []cli.Command{
 				{
-					Name:   "launch",
-					Usage:  "launch a new named cluster",
-					Action: commands.LaunchCluster,
+					Name:   "create",
+					Usage:  "create <tool> <clustername> | tool:[hadoop,spark]",
+					Action: commands.CreateCluster,
+				},
+				{
+					Name:   "start",
+					Usage:  "cluster start <clustername>",
+					Action: commands.StartCluster,
+				},
+				{
+					Name:   "stop",
+					Usage:  "cluster stop <clustername>",
+					Action: commands.StopCluster,
 				},
 				{
 					Name:   "destroy",
-					Usage:  "destroy a running cluster",
+					Usage:  "cluster destroy <clustername>",
 					Action: commands.DestroyCluster,
 				},
 				{
 					Name:   "status",
-					Usage:  "print status of clusters",
+					Usage:  "cluster status <clustername>",
 					Action: commands.PrintClusterStatus,
 				},
 			},
 		},
 		{
-			Name:  "spark",
-			Usage: "options for spark cluster management",
+			Name:  "jobs",
+			Usage: "options for jobs management",
 			Subcommands: []cli.Command{
 				{
 					Name:  "run",
-					Usage: "run a job on a spark cluster",
+					Usage: "jobs run <clustername> <jobname> cmd args...",
 					Action: func(c *cli.Context) {
-						cluster_name := c.String("cluster")
+						cluster_name := c.String("clustername")
 						job_name := c.Args().First()
 						println("running", job_name, "on", cluster_name)
 					},
 				},
 				{
 					Name:  "stop",
-					Usage: "stop a running job on a spark cluster",
+					Usage: "jobs stop <clustername> <jobname>",
 					Action: func(c *cli.Context) {
-						cluster_name := c.String("cluster")
+						cluster_name := c.String("clustername")
 						job_name := c.Args().First()
 						println("stopping", job_name, "on", cluster_name)
 					},
 				},
 				{
 					Name:  "status",
-					Usage: "print status of spark jobs on cluster(s)",
+					Usage: "jobs status <clustername>",
 					Action: func(c *cli.Context) {
-						println("spark cluster status")
+						println("jobs status <clustername>")
 					},
 				},
 			},

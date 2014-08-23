@@ -16,6 +16,7 @@ type ClusterConfig struct {
 	Name    string
 	DataDir string
 
+	Tool       string
 	Status     string
 	MasterHost string
 	MasterPort string
@@ -50,10 +51,16 @@ func writeClusterConfig(name string, cfg *ClusterConfig) {
 	checkPanic(err)
 }
 
-func LaunchCluster(c *cli.Context) {
+func CreateCluster(c *cli.Context) {
 	cname := c.GlobalString("clustername")
-	if len(c.Args()) > 0 {
-		cname = c.Args().First()
+	var tool string
+	if len(c.Args()) == 1 {
+		tool = c.Args()[0]
+	} else if len(c.Args()) == 2 {
+		tool = c.Args()[0]
+		cname = c.Args()[1]
+	} else {
+		fmt.Println("Error: bad args to LaunchCluster")
 	}
 
 	prov := c.GlobalString("provider")
@@ -84,7 +91,16 @@ func LaunchCluster(c *cli.Context) {
 			writeClusterConfig(cname, ccfg)
 		}
 
-		cluster.LaunchDockerCluster()
+		ccfg.Tool = tool
+		switch ccfg.Tool {
+		case "hadoop":
+			cluster.LaunchDockerHadoopCluster()
+		case "spark":
+			cluster.LaunchDockerSparkCluster()
+		default:
+			panic("Unknown tool type")
+		}
+
 		ccfg.Status = "RUNNING"
 		writeClusterConfig(cname, ccfg)
 
@@ -97,7 +113,63 @@ func LaunchCluster(c *cli.Context) {
 	}
 }
 
-func DestroyCluster(c *cli.Context) {
+func StartCluster(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+	var tool string
+	if len(c.Args()) == 1 {
+		cname = c.Args()[0]
+	} else if len(c.Args()) == 2 {
+		cname = c.Args()[0]
+		tool = c.Args()[1]
+	} else {
+		fmt.Println("Error: bad args to LaunchCluster")
+	}
+
+	prov := c.GlobalString("provider")
+	switch prov {
+	case "docker":
+		fmt.Println("Launching Docker Cluster")
+
+		ccfg, ok := CONFIG.Clusters[cname]
+		// Start brand new cluster
+		if !ok {
+			panic("Unknown cluster " + cname)
+		}
+
+		if ccfg.Status == "RUNNING" {
+			fmt.Println("Cluster already running")
+			return
+		} else {
+			ccfg.Status = "STARTING"
+			writeClusterConfig(cname, ccfg)
+		}
+
+		if tool != "" {
+			ccfg.Tool = tool
+		}
+
+		switch ccfg.Tool {
+		case "hadoop":
+			cluster.LaunchDockerHadoopCluster()
+		case "spark":
+			cluster.LaunchDockerSparkCluster()
+		default:
+			panic("Unknown tool type")
+		}
+
+		ccfg.Status = "RUNNING"
+		writeClusterConfig(cname, ccfg)
+
+	case "vagrant", "gce", "aws":
+		fmt.Println("provider", prov, "not available yet")
+		return
+	default:
+		fmt.Println("provider", prov, "unknown")
+		return
+	}
+}
+
+func StopCluster(c *cli.Context) {
 	cname := c.GlobalString("clustername")
 	if len(c.Args()) > 0 {
 		cname = c.Args().First()
@@ -124,6 +196,32 @@ func DestroyCluster(c *cli.Context) {
 		fmt.Println("provider", prov, "unknown")
 		return
 	}
+
+}
+
+func DestroyCluster(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+	if len(c.Args()) > 0 {
+		cname = c.Args().First()
+	}
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	if ccfg.Status != "HALTED" {
+		StopCluster(c)
+	}
+
+	// remove directory
+	home := os.Getenv("HOME")
+	fn := home + "/.dstk/clusters/" + cname
+	err := os.RemoveAll(fn)
+	checkPanic(err)
+
+	// remove configuration
+	delete(CONFIG.Clusters, cname)
 
 }
 

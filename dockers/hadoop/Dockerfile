@@ -1,17 +1,11 @@
-FROM verdverm/dtsk-java
+FROM verdverm/dstk-java
 MAINTAINER Tony Worm verdverm@gmail.com
 # adapted from
 # http://www.alexjf.net/blog/distributed-systems/hadoop-yarn-installation-definitive-guide
 
-# install hadoop 2.4.1
-RUN mkdir -p /apache
-# RUN curl http://mirror.reverse.net/pub/apache/hadoop/common/hadoop-2.4.1/hadoop-2.4.1.tar.gz | tar xz
-ADD hadoop-2.4.1.tar.gz /apache/hadoop-2.4.1.tar.gz
+RUN apt-get update && apt-get install --no-install-recommends -y rsync
 
-WORKDIR /apache
-RUN tar xzf /apache/hadoop-2.4.1.tar.gz
-
-ENV HADOOP_PREFIX       /apache/hadoop-2.4.1
+ENV HADOOP_PREFIX       /apache/hadoop-2.5.0
 ENV HADOOP_HOME         $HADOOP_PREFIX
 ENV HADOOP_COMMON_HOME  $HADOOP_PREFIX
 ENV HADOOP_CONF_DIR     $HADOOP_PREFIX/etc/hadoop
@@ -23,22 +17,17 @@ ENV HADOOP_YARN_HOME    $HADOOP_PREFIX
 # stupid env handling in (hadoop-env.sh & hadoop-daemon.sh)
 ENV USER v2
 
-ADD files/hdfs-site.xml /apache/hadoop-2.4.1/etc/hadoop/hdfs-site.xml
-ADD files/core-site.xml /apache/hadoop-2.4.1/etc/hadoop/core-site.xml
-ADD files/yarn-site.xml /apache/hadoop-2.4.1/etc/hadoop/yarn-site.xml
-ADD run.sh              /apache/run.sh
+RUN mkdir -p /apache
 
+ADD hadoop-2.5.0        /apache/hadoop-2.5.0
+ADD files/hdfs-site.xml /apache/hadoop-2.5.0/etc/hadoop/hdfs-site.xml
+ADD files/core-site.xml /apache/hadoop-2.5.0/etc/hadoop/core-site.xml
+ADD files/yarn-site.xml /apache/hadoop-2.5.0/etc/hadoop/yarn-site.xml
 
-# install flume 1.5.9
-RUN curl http://www.bizdirusa.com/mirrors/apache/flume/1.5.0/apache-flume-1.5.0-bin.tar.gz | tar xz
+ADD apache-flume-1.5.0-bin     /apache/apache-flume-1.5.0-bin
+ADD sqoop-1.99.3-bin-hadoop200 /apache/sqoop-1.99.3-bin-hadoop200
 
-# install sqoop 1.99.3
-RUN curl http://mirrors.sonic.net/apache/sqoop/1.99.3/sqoop-1.99.3-bin-hadoop200.tar.gz | tar xz
-
-
-# http://tez.apache.org/install.html
-# http://apache.mirrors.lucidnetworks.net/incubator/tez/tez-0.4.1-incubating/tez-0.4.1-incubating-src.tar.gz
-
+ADD run.sh /apache/run.sh
 CMD /apache/run.sh
 
 EXPOSE 8088
