@@ -41,5 +41,5 @@ cd spark
 # rm *.tar.gz
 # http://spark.apache.org/downloads.html
 # curl http://mirror.reverse.net/pub/apache/spark/spark-1.0.2/spark-1.0.2-bin-hadoop2.tgz | tar xz
-# docker build $usecache -t verdverm/dstk-spark .
+docker build $usecache -t verdverm/dstk-spark .
 cd ..

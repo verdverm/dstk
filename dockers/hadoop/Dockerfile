@@ -22,6 +22,7 @@ RUN mkdir -p /apache
 ADD hadoop-2.5.0        /apache/hadoop-2.5.0
 ADD files/hdfs-site.xml /apache/hadoop-2.5.0/etc/hadoop/hdfs-site.xml
 ADD files/core-site.xml /apache/hadoop-2.5.0/etc/hadoop/core-site.xml
+ADD files/mapred-site.xml /apache/hadoop-2.5.0/etc/hadoop/mapred-site.xml
 ADD files/yarn-site.xml /apache/hadoop-2.5.0/etc/hadoop/yarn-site.xml
 
 ADD apache-flume-1.5.0-bin     /apache/apache-flume-1.5.0-bin
@@ -30,5 +31,11 @@ ADD sqoop-1.99.3-bin-hadoop200 /apache/sqoop-1.99.3-bin-hadoop200
 ADD run.sh /apache/run.sh
 CMD /apache/run.sh
 
-EXPOSE 8088
-EXPOSE 8032
+# namenode
+EXPOSE 50070 19888 9000
+
+# resource manager
+EXPOSE 8088 8032
+
+#slaves
+EXPOSE 50010 50020 50060 50075

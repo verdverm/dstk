@@ -1,13 +1,13 @@
 <configuration>
   <property>
     <name>dfs.datanode.data.dir</name>
-    <value>file:///apache/hadoop-2.4.1/hdfs/datanode</value>
+    <value>file:///apache/hadoop-2.5.0/hdfs/datanode</value>
     <description>Comma separated list of paths on the local filesystem of a DataNode where it should store its blocks.</description>
   </property>
 
   <property>
     <name>dfs.namenode.name.dir</name>
-    <value>file:///apache/hadoop-2.4.1/hdfs/namenode</value>
+    <value>file:///apache/hadoop-2.5.0/hdfs/namenode</value>
     <description>Path on the local filesystem where the NameNode stores the namespace and transaction logs persistently.</description>
   </property>
 

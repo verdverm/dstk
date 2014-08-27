@@ -1,55 +1,14 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/codegangsta/cli"
 
 	"github.com/verdverm/dstk/commands/cluster"
+	"github.com/verdverm/dstk/commands/jobs"
 )
-
-type ClusterConfig struct {
-	Type    string
-	Name    string
-	DataDir string
-
-	Tool       string
-	Status     string
-	MasterHost string
-	MasterPort string
-	Slaves     []string
-}
-
-func readClusterConfig(name string) *ClusterConfig {
-	home := os.Getenv("HOME")
-	fn := home + "/.dstk/clusters/" + name + "/config.ini"
-
-	cfg := new(ClusterConfig)
-
-	data, err := ioutil.ReadFile(fn)
-	checkPanic(err)
-
-	err = json.Unmarshal(data, cfg)
-	checkPanic(err)
-
-	return cfg
-}
-
-func writeClusterConfig(name string, cfg *ClusterConfig) {
-	home := os.Getenv("HOME")
-	dir := home + "/.dstk/clusters/" + name
-	fn := dir + "/config.ini"
-
-	data, err := json.MarshalIndent(cfg, "", "  ")
-	checkPanic(err)
-
-	os.MkdirAll(dir, 0755)
-	err = ioutil.WriteFile(fn, data, 0644)
-	checkPanic(err)
-}
 
 func CreateCluster(c *cli.Context) {
 	cname := c.GlobalString("clustername")
@@ -71,15 +30,13 @@ func CreateCluster(c *cli.Context) {
 		ccfg, ok := CONFIG.Clusters[cname]
 		// Start brand new cluster
 		if !ok {
-			ccfg = new(ClusterConfig)
+			ccfg = new(cluster.ClusterConfig)
 			ccfg.DataDir = CONFIG.DataDir
 			ccfg.Name = cname
 			ccfg.Type = "docker"
 			ccfg.Status = "HALTED"
-			ccfg.MasterHost = "127.0.0.1"
-			ccfg.MasterPort = "10000"
 
-			writeClusterConfig(cname, ccfg)
+			cluster.WriteClusterConfig(cname, ccfg)
 			CONFIG.Clusters[cname] = ccfg
 		}
 
@@ -88,21 +45,18 @@ func CreateCluster(c *cli.Context) {
 			return
 		} else {
 			ccfg.Status = "STARTING"
-			writeClusterConfig(cname, ccfg)
+			cluster.WriteClusterConfig(cname, ccfg)
 		}
 
 		ccfg.Tool = tool
-		switch ccfg.Tool {
-		case "hadoop":
-			cluster.LaunchDockerHadoopCluster()
-		case "spark":
-			cluster.LaunchDockerSparkCluster()
-		default:
-			panic("Unknown tool type")
+		ccfg.Nodes = make([]string, 0, CONFIG.Nodes)
+		for i := 0; i < CONFIG.Nodes; i++ {
+			ccfg.Nodes = append(ccfg.Nodes, fmt.Sprintf("dstk-node-%02d", i))
 		}
+		cluster.LaunchDockerCluster(ccfg)
 
 		ccfg.Status = "RUNNING"
-		writeClusterConfig(cname, ccfg)
+		cluster.WriteClusterConfig(cname, ccfg)
 
 	case "vagrant", "gce", "aws":
 		fmt.Println("provider", prov, "not available yet")
@@ -141,24 +95,17 @@ func StartCluster(c *cli.Context) {
 			return
 		} else {
 			ccfg.Status = "STARTING"
-			writeClusterConfig(cname, ccfg)
+			cluster.WriteClusterConfig(cname, ccfg)
 		}
 
 		if tool != "" {
 			ccfg.Tool = tool
 		}
 
-		switch ccfg.Tool {
-		case "hadoop":
-			cluster.LaunchDockerHadoopCluster()
-		case "spark":
-			cluster.LaunchDockerSparkCluster()
-		default:
-			panic("Unknown tool type")
-		}
+		cluster.LaunchDockerCluster(ccfg)
 
 		ccfg.Status = "RUNNING"
-		writeClusterConfig(cname, ccfg)
+		cluster.WriteClusterConfig(cname, ccfg)
 
 	case "vagrant", "gce", "aws":
 		fmt.Println("provider", prov, "not available yet")
@@ -180,14 +127,14 @@ func StopCluster(c *cli.Context) {
 		panic("Couldn't find cluster in ClusterMap")
 	}
 	ccfg.Status = "STOPPING"
-	writeClusterConfig(cname, ccfg)
+	cluster.WriteClusterConfig(cname, ccfg)
 
 	prov := ccfg.Type
 	switch prov {
 	case "docker":
-		cluster.DestroyDockerCluster()
+		cluster.DestroyDockerCluster(ccfg)
 		ccfg.Status = "HALTED"
-		writeClusterConfig(cname, ccfg)
+		cluster.WriteClusterConfig(cname, ccfg)
 
 	case "vagrant", "gce", "aws":
 		fmt.Println("provider", prov, "not available yet")
@@ -228,7 +175,7 @@ func DestroyCluster(c *cli.Context) {
 func PrintClusterStatus(c *cli.Context) {
 	fmtstr := "%-12s  %-12s  %-12s  %s:%s\n"
 	fmt.Printf(fmtstr, "Name", "Type", "Status", "Host", "Port")
-	printr := func(ccfg *ClusterConfig) {
+	printr := func(ccfg *cluster.ClusterConfig) {
 		fmt.Printf(fmtstr, ccfg.Name, ccfg.Type, ccfg.Status, ccfg.MasterHost, ccfg.MasterPort)
 	}
 
@@ -250,4 +197,37 @@ func PrintClusterStatus(c *cli.Context) {
 	}
 	printr(ccfg)
 
+}
+
+func RunClusterJob(c *cli.Context) {
+	cluster_name := c.GlobalString("clustername")
+	job_name := c.GlobalString("jobname")
+	cmd_name := c.Args().First()
+	println("running", cmd_name, "(", job_name, ") on", cluster_name)
+
+	jobs.SparkSubmit()
+}
+
+func LoginClusterNode(c *cli.Context) {
+	cluster_name := c.GlobalString("clustername")
+	node_name := c.Args().First()
+	println("login: ", node_name, "on", cluster_name)
+
+	// ccfg, ok := CONFIG.Clusters[cname]
+	// if !ok {
+	// 	panic("Couldn't find cluster in ClusterMap")
+	// }
+
+	cluster.LoginDockerNode(node_name)
+}
+
+func ClusterAmbariShell(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	cluster.LaunchDockerAmbariShell(ccfg)
 }

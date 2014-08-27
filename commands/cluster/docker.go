@@ -2,6 +2,8 @@ package cluster
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
@@ -21,38 +23,80 @@ func checkErr(err error) {
 	}
 }
 
-func LaunchDockerHadoopCluster() {
+func exec_command(program string, args ...string) {
+	cmd := exec.Command(program, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+	}
+}
+
+func LoginDockerNode(node_name string) {
+	exec_command("/bin/bash", "-c", "sudo docker-enter "+node_name)
+}
+
+func LaunchDockerAmbariShell(ccfg *ClusterConfig) {
+	cmd_str := fmt.Sprintf("sudo docker-enter dstk-node-00 AMBARI_HOST=%s /tmp/dstk-ambari-shell.sh", ccfg.MasterHost)
+	exec_command("/bin/bash", "-c", cmd_str)
+}
+
+func LaunchDockerCluster(ccfg *ClusterConfig) {
+	switch ccfg.Tool {
+	case "hadoop", "spark":
+		LaunchDockerHadoopCluster(len(ccfg.Nodes))
+		ccfg.MasterHost = MASTERIP
+		ccfg.MasterPort = "8080"
+
+	default:
+		panic("Unknown tool type")
+	}
+}
+
+func LaunchDockerHadoopCluster(numnodes int) {
 	fmt.Println("Launching local docker hadoop cluster:")
 
-	launchDockerDatabases()
-	launchDockerHadoopMaster()
-	launchDockerHadoopSlaves()
+	// launchDockerDatabases()
+	launchDockerHadoopFirst()
+	for i := 1; i < numnodes; i++ {
+		launchDockerHadoopNode(i)
+	}
 
-	fmt.Println("Sleeping 10s for everything to come up")
-	time.Sleep(10 * time.Second)
+	wait := 10
+	fmt.Printf("\033[sSleeping %2ds for everything to come up", wait)
+	for i := 1; i <= wait; i++ {
+		time.Sleep(1 * time.Second)
+		fmt.Printf("\033[uSleeping %2ds for everything to come up", wait-i)
+	}
+
+	fmt.Println("Installing Cluster")
+	installDockerHadoopCluster(numnodes)
+
+	wait_str := fmt.Sprintf("docker logs -f dstk-cluster-installer")
+	exec_command("/bin/bash", "-c", wait_str)
+
+	fmt.Println("Post-install Scripts")
+	cmd_str := fmt.Sprintf("sudo docker-enter dstk-node-00 /tmp/mkdir-hadoop.sh")
+	exec_command("/bin/bash", "-c", cmd_str)
+
 }
 
-func LaunchDockerSparkCluster() {
-	fmt.Println("Launching local docker spark cluster:")
-
-	launchDockerDatabases()
-	launchDockerSparkMaster()
-	launchDockerSparkSlaves()
-
-	fmt.Println("Sleeping 10s for everything to come up")
-	time.Sleep(10 * time.Second)
-}
-
-func DestroyDockerCluster() {
+func DestroyDockerCluster(ccfg *ClusterConfig) {
 	fmt.Println("Destroying local docker cluster:")
 
-	destroyDocker("spark-slave")
-	destroyDocker("spark-master")
-	destroyDocker("hadoop-slave")
-	destroyDocker("hadoop-master")
-	destroyDocker("neo4j")
-	destroyDocker("couchdb")
-	destroyDocker("postgresql")
+	// use docker API to determine whats running
+	// and then destroy that ?
+
+	for i := 0; i < len(ccfg.Nodes); i++ {
+		fmt.Printf("destroying dstk-node-%02d\n", i)
+		destroyDocker(fmt.Sprintf("dstk-node-%02d", i))
+	}
+	destroyDocker("dstk-cluster-installer")
+	// destroyDocker("dtsk-postgresql")
+	// destroyDocker("dtsk-couchdb")
+	// destroyDocker("dtsk-neo4j")
 }
 
 func launchDockerDatabases() {
@@ -61,20 +105,12 @@ func launchDockerDatabases() {
 	launchDockerNeo4j()
 }
 
-func launchDockerMaster() {
-	launchDockerHadoopMaster()
-	// launchDockerSparkMaster()
-}
-
-func launchDockerSlaves() {
-	launchDockerHadoopSlaves()
-	// launchDockerSparkSlaves()
-}
-
 func launchDockerCouchDB() {
+	name := "dstk-couchdb"
+
 	// create options
 	copts := docker.CreateContainerOptions{
-		Name: "couchdb",
+		Name: name,
 		Config: &docker.Config{
 			Image: "klaemo/couchdb",
 			ExposedPorts: map[docker.Port]struct{}{
@@ -105,7 +141,7 @@ func launchDockerCouchDB() {
 	panicErr(err)
 
 	fmt.Println("  - Starting CouchDB container")
-	err = client.StartContainer("couchdb", sopts)
+	err = client.StartContainer(name, sopts)
 	panicErr(err)
 
 	fmt.Println("  - Successfully started CouchDB docker")
@@ -113,9 +149,11 @@ func launchDockerCouchDB() {
 }
 
 func launchDockerPostgresql() {
+	name := "dstk-postgresql"
+
 	// create options
 	copts := docker.CreateContainerOptions{
-		Name: "postgresql",
+		Name: name,
 		Config: &docker.Config{
 			Image: "paintedfox/postgresql",
 			ExposedPorts: map[docker.Port]struct{}{
@@ -146,16 +184,18 @@ func launchDockerPostgresql() {
 	panicErr(err)
 
 	fmt.Println("  - Starting Postgresql container")
-	err = client.StartContainer("postgresql", sopts)
+	err = client.StartContainer(name, sopts)
 	panicErr(err)
 
 	fmt.Println("  - Successfully started Postgresql docker")
 }
 
 func launchDockerNeo4j() {
+	name := "dstk-neo4j"
+
 	// create options
 	copts := docker.CreateContainerOptions{
-		Name: "neo4j",
+		Name: name,
 		Config: &docker.Config{
 			Image: "tpires/neo4j",
 			ExposedPorts: map[docker.Port]struct{}{
@@ -186,105 +226,89 @@ func launchDockerNeo4j() {
 	panicErr(err)
 
 	fmt.Println("  - Starting Neo4j container")
-	err = client.StartContainer("neo4j", sopts)
+	err = client.StartContainer(name, sopts)
 	panicErr(err)
 
 	fmt.Println("  - Successfully started Neo4j docker")
 }
 
-func launchDockerHadoopMaster() {
+var MASTERIP = ""
+
+// var BLUEPRINT = "myblueprint"
+
+var BLUEPRINT = "multi-node-hdfs-yarn"
+
+func launchDockerHadoopFirst() {
+	name := fmt.Sprintf("dstk-node-%02d", 0)
 
 	// create options
 	copts := docker.CreateContainerOptions{
-		Name: "hadoop-master",
+		Name: name,
 		Config: &docker.Config{
-			Image: "verdverm/dstk-hadoop",
+			Image:      "verdverm/dstk-spark",
+			Entrypoint: []string{"/usr/local/serf/bin/start-serf-agent.sh"},
+			Cmd:        []string{"--tag", "ambari-server=true"},
+			CpuShares:  4,
+			Hostname:   name,
+			Domainname: "iassic.com",
+			// Dns:        []string{"127.0.0.1"},
 			ExposedPorts: map[docker.Port]struct{}{
-				docker.Port("8088"):  {},
-				docker.Port("8032"):  {},
-				docker.Port("50070"): {},
-				docker.Port("50075"): {},
-				docker.Port("50090"): {},
+				docker.Port("8080"): {},
+				docker.Port("7373"): {},
+				docker.Port("7946"): {},
 			},
-			Env: []string{
-				"NODE_TYPE=single",
-			},
+			// Env: []string{
+			// 	"KEYCHAIN=$KEYCHAIN",
+			// },
 		},
 	}
 
 	// start options for:
 	sopts := &docker.HostConfig{
-		ContainerIDFile: "verdverm/dstk-hadoop",
+		ContainerIDFile: "verdverm/dstk-spark",
 		Privileged:      true,
-		NetworkMode:     "host",
-		PortBindings: map[docker.Port][]docker.PortBinding{
-			docker.Port("8088"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "8088",
-				},
-			},
-			docker.Port("8032"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "8032",
-				},
-			},
-
-			docker.Port("50070"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "50070",
-				},
-			},
-			docker.Port("50075"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "50075",
-				},
-			},
-			docker.Port("50090"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "50090",
-				},
-			},
-		},
+		Dns:             []string{"127.0.0.1"},
 	}
 
 	client, err := docker.NewClient(endpoint)
 	panicErr(err)
 
-	fmt.Println("  - Creating Hadoop-Master container")
+	fmt.Println("  - Creating", name, "container")
 	_, err = client.CreateContainer(copts)
 	panicErr(err)
 
-	fmt.Println("  - Starting Hadoop-Master container")
-	err = client.StartContainer("hadoop-master", sopts)
+	fmt.Println("  - Starting", name, "container")
+	err = client.StartContainer(name, sopts)
 	panicErr(err)
 
-	fmt.Println("  - Successfully started Hadoop-Master docker")
+	fmt.Println("  - Successfully started", name, "docker")
+
+	cont, err := client.InspectContainer(name)
+	panicErr(err)
+	MASTERIP = cont.NetworkSettings.IPAddress
 }
 
-func launchDockerHadoopSlaves() {
+func launchDockerHadoopNode(id int) {
+	name := fmt.Sprintf("dstk-node-%02d", id)
 
-}
-
-func launchDockerSparkMaster() {
 	// create options
 	copts := docker.CreateContainerOptions{
-		Name: "spark-master",
+		Name: name,
 		Config: &docker.Config{
-			Image: "verdverm/dstk-spark",
+			Image:      "verdverm/dstk-spark",
+			Entrypoint: []string{"/usr/local/serf/bin/start-serf-agent.sh"},
+			Cmd:        []string{"--log-level debug"},
+			CpuShares:  4,
+			Hostname:   name,
+			Domainname: "iassic.com",
+			// Dns:        []string{"127.0.0.1"},
 			ExposedPorts: map[docker.Port]struct{}{
-				// hadoop related
-				docker.Port("8088"): {},
-				docker.Port("8032"): {},
-
-				// spark related
 				docker.Port("8080"): {},
-				docker.Port("7077"): {},
-				docker.Port("22"):   {},
+				docker.Port("7373"): {},
+				docker.Port("7946"): {},
+			},
+			Env: []string{
+				"SERF_JOIN_IP=" + MASTERIP,
 			},
 		},
 	}
@@ -293,56 +317,68 @@ func launchDockerSparkMaster() {
 	sopts := &docker.HostConfig{
 		ContainerIDFile: "verdverm/dstk-spark",
 		Privileged:      true,
-		PortBindings: map[docker.Port][]docker.PortBinding{
-			docker.Port("8088"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "8088",
-				},
-			},
-			docker.Port("8032"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "8032",
-				},
-			},
-
-			docker.Port("8080"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "8080",
-				},
-			},
-			docker.Port("7077"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "7077",
-				},
-			},
-			docker.Port("22"): {
-				docker.PortBinding{
-					HostIp:   "0.0.0.0",
-					HostPort: "2222",
-				},
-			},
-		},
+		Dns:             []string{"127.0.0.1"},
 	}
 
 	client, err := docker.NewClient(endpoint)
 	panicErr(err)
 
-	fmt.Println("  - Creating Spark-Master container")
+	fmt.Println("  - Creating", name, "container")
 	_, err = client.CreateContainer(copts)
 	panicErr(err)
 
-	fmt.Println("  - Starting Spark-Master container")
-	err = client.StartContainer("spark-master", sopts)
+	fmt.Println("  - Starting", name, "container")
+	err = client.StartContainer(name, sopts)
 	panicErr(err)
 
-	fmt.Println("  - Successfully started Spark-Master docker")
+	fmt.Println("  - Successfully started", name, "docker")
 }
 
-func launchDockerSparkSlaves() {
+func installDockerHadoopCluster(numnodes int) {
+	name := "dstk-cluster-installer"
+	// create options
+	copts := docker.CreateContainerOptions{
+		Name: name,
+		Config: &docker.Config{
+			Image:      "verdverm/dstk-spark",
+			Entrypoint: []string{"/bin/sh"},
+			Cmd:        []string{"-c", "/tmp/install-cluster.sh"},
+			Hostname:   name,
+			Domainname: "iassic.com",
+			Env: []string{
+				"BLUEPRINT=" + BLUEPRINT,
+				fmt.Sprintf("EXPECTED_HOST_COUNT=%d", numnodes),
+			},
+		},
+	}
+
+	// start options for:
+	sopts := &docker.HostConfig{
+		ContainerIDFile: "verdverm/dstk-spark",
+		Privileged:      true,
+		Dns:             []string{"127.0.0.1"},
+		Links:           []string{"dstk-node-00:ambariserver"},
+	}
+
+	client, err := docker.NewClient(endpoint)
+	panicErr(err)
+
+	fmt.Println("  - Creating", name, "container")
+	_, err = client.CreateContainer(copts)
+	panicErr(err)
+
+	fmt.Println("  - Starting", name, "container")
+	err = client.StartContainer(name, sopts)
+	panicErr(err)
+
+	fmt.Println("  - Successfully started", name, "docker")
+
+	// ropts := docker.RemoveContainerOptions{
+	// 	ID:    name,
+	// 	Force: true,
+	// }
+	// err = client.RemoveContainer(ropts)
+	// panicErr(err)
 
 }
 

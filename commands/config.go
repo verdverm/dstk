@@ -8,6 +8,8 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/robfig/config"
+
+	"github.com/verdverm/dstk/commands/cluster"
 )
 
 func checkPanic(err error) {
@@ -21,7 +23,7 @@ var cfgStr = `# dstk - global config
 # DEFAULT SETTINGS
 datadir: ${HOME}/.dstk/data
 databases: neo4j postgresql couchdb
-slaves: 3
+nodes: 3
 
 [neo4j]
 replicas: 1
@@ -58,11 +60,11 @@ type DbSettings struct {
 
 type DstkConfig struct {
 	DataDir    string
-	Slaves     int
+	Nodes      int
 	Databases  []string
 	DbSettings map[string]*DbSettings
 
-	Clusters map[string]*ClusterConfig
+	Clusters map[string]*cluster.ClusterConfig
 }
 
 var (
@@ -106,7 +108,7 @@ func newDefaultDstkConfig() *DstkConfig {
 	cfg := &DstkConfig{
 		Databases:  make([]string, 0, 4),
 		DbSettings: make(map[string]*DbSettings),
-		Clusters:   make(map[string]*ClusterConfig),
+		Clusters:   make(map[string]*cluster.ClusterConfig),
 	}
 	return cfg
 }
@@ -133,7 +135,7 @@ func convertConfigMapToStruct() {
 	// read defaults first
 	CONFIG.DataDir, err = CFGMAP.String("default", "datadir")
 	checkPanic(err)
-	CONFIG.Slaves, err = CFGMAP.Int("default", "slaves")
+	CONFIG.Nodes, err = CFGMAP.Int("default", "nodes")
 	checkPanic(err)
 
 	dbs, err := CFGMAP.String("default", "databases")
@@ -175,7 +177,10 @@ func convertDbConfigMapToStruct(section string) {
 func readDstkClusterDir() {
 	home := os.Getenv("HOME")
 	cluster_dirs, err := ioutil.ReadDir(home + "/.dstk/clusters")
-	checkPanic(err)
+	if err != nil {
+		fmt.Println("error: ", err)
+		return
+	}
 
 	for _, C := range cluster_dirs {
 		if !C.IsDir() {
@@ -183,7 +188,7 @@ func readDstkClusterDir() {
 		}
 		cname := C.Name()
 		// fmt.Println("Reading cluster config:", cname)
-		CONFIG.Clusters[cname] = readClusterConfig(cname)
+		CONFIG.Clusters[cname] = cluster.ReadClusterConfig(cname)
 	}
 }
 

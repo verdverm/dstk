@@ -66,6 +66,11 @@ func main() {
 			},
 		},
 		{
+			Name:   "login",
+			Usage:  "login <node_name>",
+			Action: commands.LoginClusterNode,
+		},
+		{
 			Name:  "cluster",
 			Usage: "options for cluster management",
 			Subcommands: []cli.Command{
@@ -94,6 +99,11 @@ func main() {
 					Usage:  "cluster status <clustername>",
 					Action: commands.PrintClusterStatus,
 				},
+				{
+					Name:   "ambari",
+					Usage:  "cluster ambari",
+					Action: commands.ClusterAmbariShell,
+				},
 			},
 		},
 		{
@@ -101,21 +111,17 @@ func main() {
 			Usage: "options for jobs management",
 			Subcommands: []cli.Command{
 				{
-					Name:  "run",
-					Usage: "jobs run <clustername> <jobname> cmd args...",
-					Action: func(c *cli.Context) {
-						cluster_name := c.String("clustername")
-						job_name := c.Args().First()
-						println("running", job_name, "on", cluster_name)
-					},
+					Name:   "run",
+					Usage:  "jobs run cmd args...",
+					Action: commands.RunClusterJob,
 				},
 				{
 					Name:  "stop",
-					Usage: "jobs stop <clustername> <jobname>",
+					Usage: "jobs stop <jobname>",
 					Action: func(c *cli.Context) {
-						cluster_name := c.String("clustername")
+						cluster_name := c.GlobalString("clustername")
 						job_name := c.Args().First()
-						println("stopping", job_name, "on", cluster_name)
+						println("stopping", job_name, "(", job_name, ")on", cluster_name)
 					},
 				},
 				{
