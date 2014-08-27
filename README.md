@@ -54,7 +54,8 @@ The user:pass is `admin:admin`
 
 `dstk -c <clustername> login <nodename>`
 
-Environment variables from the Dockerfiles are missing on login...
+Environment variables from the Dockerfiles are missing on login.
+requires sudo access for `docker-enter (nsenter)`.
 
 ### Open Ambari Shell
 
@@ -64,7 +65,8 @@ Environment variables from the Dockerfiles are missing on login...
 
 `dstk -c <clustername> -j <jobname> jobs run <command>`
 
-currently the command is ignored... sorry
+currently the command is ignored... sorry.
+It's hardcoded to run the SparkPi example temporarily.
 
 ### TODO
 
@@ -84,5 +86,14 @@ Help out! Here are some things that need doing
   -- config file
   -- eamples of these
 - convert cluster meta-data storage to Sqlite
+- use Ambari / Hadoop APIs instead of shelling out
+- adding / removing nodes
+  -- test fault tolerance
+  -- resize cluster
+  -- install script for single node?
+  -- serf
+- add custom serf handlers
+  -- serf plugin handle script
+- use [github.com/nsf/termbox-go](https://github.com/nsf/termbox-go) for cli
 
 
