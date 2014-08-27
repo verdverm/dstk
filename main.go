@@ -71,8 +71,75 @@ func main() {
 			Action: commands.LoginClusterNode,
 		},
 		{
+			Name:  "ambari",
+			Usage: "dstk -c <clustername> ambari <cmd> <args>",
+			Subcommands: []cli.Command{
+				{
+					Name:   "shell",
+					Usage:  "ambari shell <nodename>",
+					Action: commands.ClusterAmbariShell,
+				},
+				{
+					Name:   "blueprint",
+					Usage:  "ambari blueprint <subcmd>",
+					Action: commands.ClusterAmbariBlueprint,
+				},
+				{
+					Name:   "command",
+					Usage:  "ambari command <cmd>",
+					Action: commands.ClusterAmbariCommand,
+				},
+			},
+		},
+		{
+			Name:  "hdfs",
+			Usage: "dstk -c <clustername> hdfs",
+			Subcommands: []cli.Command{
+				{
+					Name:   "ls",
+					Usage:  "hdfs ls <path>",
+					Action: commands.ClusterHdfsLs,
+				},
+				{
+					Name:   "cpin",
+					Usage:  "hdfs cpin <src> <dest>",
+					Action: commands.ClusterHdfsCpin,
+				},
+				{
+					Name:   "cpout",
+					Usage:  "hdfs cpout <src> <dest>",
+					Action: commands.ClusterHdfsCpout,
+				},
+				{
+					Name:   "mv",
+					Usage:  "hdfs mv <dir>",
+					Action: commands.ClusterHdfsMv,
+				},
+				{
+					Name:   "rm",
+					Usage:  "hdfs rm <dir>",
+					Action: commands.ClusterHdfsRm,
+				},
+				{
+					Name:   "mkdir",
+					Usage:  "hdfs mkdir <dir>",
+					Action: commands.ClusterHdfsMkdir,
+				},
+				{
+					Name:   "chown",
+					Usage:  "hdfs chown <dir> <owner> <group>",
+					Action: commands.ClusterHdfsChown,
+				},
+				{
+					Name:   "chmod",
+					Usage:  "hdfs chmod <file,dir> <oct-permissions>",
+					Action: commands.ClusterHdfsChmod,
+				},
+			},
+		},
+		{
 			Name:  "cluster",
-			Usage: "options for cluster management",
+			Usage: "dstk -c <clustername> cluster <cmd> <args>",
 			Subcommands: []cli.Command{
 				{
 					Name:   "create",
@@ -98,11 +165,6 @@ func main() {
 					Name:   "status",
 					Usage:  "cluster status <clustername>",
 					Action: commands.PrintClusterStatus,
-				},
-				{
-					Name:   "ambari",
-					Usage:  "cluster ambari",
-					Action: commands.ClusterAmbariShell,
 				},
 			},
 		},

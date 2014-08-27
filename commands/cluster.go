@@ -231,3 +231,177 @@ func ClusterAmbariShell(c *cli.Context) {
 
 	cluster.LaunchDockerAmbariShell(ccfg)
 }
+
+func ClusterAmbariBlueprint(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	cluster.LaunchDockerAmbariShell(ccfg)
+}
+
+func ClusterAmbariCommand(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	cmd := ""
+	if len(c.Args()) == 1 {
+		for _, arg := range c.Args() {
+			cmd += arg + " "
+		}
+	} else {
+		fmt.Println("Please specify what to list")
+	}
+
+	cluster.LaunchDockerAmbariCommand(cmd, ccfg)
+}
+
+func ClusterHdfsLs(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	dir := ""
+	if len(c.Args()) == 1 {
+		dir = c.Args()[0]
+	} else {
+		fmt.Println("Please specify what to list")
+		return
+	}
+
+	cluster.DockerHdfsLs(dir, ccfg)
+	fmt.Println()
+}
+
+func ClusterHdfsCpin(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	cluster.DockerHdfsCpin(ccfg)
+}
+
+func ClusterHdfsCpout(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+	cluster.DockerHdfsCpout(ccfg)
+}
+
+func ClusterHdfsMv(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	src, dest := "", ""
+	if len(c.Args()) == 2 {
+		src = c.Args()[0]
+		dest = c.Args()[1]
+	} else {
+		fmt.Println("Please specify what to list")
+		return
+	}
+
+	cluster.DockerHdfsMv(src, dest, ccfg)
+}
+
+func ClusterHdfsRm(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	dir := ""
+	if len(c.Args()) == 1 {
+		dir = c.Args()[0]
+	} else {
+		fmt.Println("Please specify what to list")
+		return
+	}
+
+	cluster.DockerHdfsRm(dir, ccfg)
+}
+
+func ClusterHdfsMkdir(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	dir := ""
+	if len(c.Args()) == 1 {
+		dir = c.Args()[0]
+	} else {
+		fmt.Println("Please specify what to list")
+		return
+	}
+
+	cluster.DockerHdfsMkdir(dir, ccfg)
+}
+
+func ClusterHdfsChmod(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	dir := ""
+	perm := ""
+	if len(c.Args()) == 2 {
+		dir = c.Args()[0]
+		perm = c.Args()[1]
+	} else {
+		fmt.Println("Please specify what to list")
+		return
+	}
+
+	cluster.DockerHdfsChmod(dir, perm, ccfg)
+}
+
+func ClusterHdfsChown(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Couldn't find cluster in ClusterMap")
+	}
+
+	dir := ""
+	owner := ""
+	group := ""
+	if len(c.Args()) == 3 {
+		dir = c.Args()[0]
+		dir = c.Args()[1]
+		dir = c.Args()[2]
+	} else {
+		fmt.Println("Usage: dstk -c <clustername> hdfs chown <dir> <owner> <group>")
+		return
+	}
+
+	cluster.DockerHdfsChown(dir, owner, group, ccfg)
+}

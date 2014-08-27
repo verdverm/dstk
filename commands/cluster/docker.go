@@ -43,6 +43,11 @@ func LaunchDockerAmbariShell(ccfg *ClusterConfig) {
 	exec_command("/bin/bash", "-c", cmd_str)
 }
 
+func LaunchDockerAmbariCommand(cmd string, ccfg *ClusterConfig) {
+	cmd_str := fmt.Sprintf("sudo docker-enter dstk-node-00 AMBARI_HOST=%s /tmp/dstk-ambari-shell.sh %s", ccfg.MasterHost, cmd)
+	exec_command("/bin/bash", "-c", cmd_str)
+}
+
 func LaunchDockerCluster(ccfg *ClusterConfig) {
 	switch ccfg.Tool {
 	case "hadoop", "spark":
@@ -396,4 +401,42 @@ func destroyDocker(name string) {
 	fmt.Println("Removing", name, "container")
 	err = client.RemoveContainer(ropts)
 	checkErr(err)
+}
+
+func DockerHdfsLs(dir string, ccfg *ClusterConfig) {
+	cmd := "curl -s 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" + dir + "?op=LISTSTATUS' | jq '.'"
+	exec_command("/bin/bash", "-c", cmd)
+}
+
+func DockerHdfsCpin(ccfg *ClusterConfig) {
+
+}
+func DockerHdfsCpout(ccfg *ClusterConfig) {
+
+}
+func DockerHdfsMv(src, dest string, ccfg *ClusterConfig) {
+	fmt.Println("HDFS MV: ", src, dest)
+	cmd := "curl -s -X PUT 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
+		src + "?user.name=hdfs&op=RENAME&destination=" + dest + "' | jq '.'"
+	exec_command("/bin/bash", "-c", cmd)
+}
+func DockerHdfsRm(dir string, ccfg *ClusterConfig) {
+	cmd := "curl -s -X DELETE 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
+		dir + "?user.name=hdfs&op=DELETE&recursive=true' | jq '.'"
+	exec_command("/bin/bash", "-c", cmd)
+}
+func DockerHdfsMkdir(dir string, ccfg *ClusterConfig) {
+	cmd := "curl -s -X PUT 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
+		dir + "?user.name=hdfs&op=MKDIRS&permission=0755' | jq '.'"
+	exec_command("/bin/bash", "-c", cmd)
+}
+func DockerHdfsChmod(dir, perm string, ccfg *ClusterConfig) {
+	cmd := "curl -s -X PUT 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
+		dir + "?user.name=hdfs&op=SETPERMISSION&permission=" + perm + "' | jq '.'"
+	exec_command("/bin/bash", "-c", cmd)
+}
+func DockerHdfsChown(dir, owner, group string, ccfg *ClusterConfig) {
+	cmd := "curl -s -X PUT 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
+		dir + "?user.name=hdfs&op=SETOWN&owner=" + owner + "&group=" + group + "' | jq '.'"
+	exec_command("/bin/bash", "-c", cmd)
 }
