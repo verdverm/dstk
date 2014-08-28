@@ -71,6 +71,16 @@ func main() {
 			Action: commands.LoginClusterNode,
 		},
 		{
+			Name:   "addhosts",
+			Usage:  "addhosts <clustername> (to /etc/hosts)",
+			Action: commands.WriteClusterHosts,
+		},
+		{
+			Name:   "removehosts",
+			Usage:  "removehosts <clustername> (from /etc/hosts)",
+			Action: commands.RemoveClusterHosts,
+		},
+		{
 			Name:  "ambari",
 			Usage: "dstk -c <clustername> ambari <cmd> <args>",
 			Subcommands: []cli.Command{
@@ -102,12 +112,12 @@ func main() {
 				},
 				{
 					Name:   "cpin",
-					Usage:  "hdfs cpin <src> <dest>",
+					Usage:  "hdfs cpin <filename> <hdfspath>",
 					Action: commands.ClusterHdfsCpin,
 				},
 				{
 					Name:   "cpout",
-					Usage:  "hdfs cpout <src> <dest>",
+					Usage:  "hdfs cpout <hdfspath> <filename>",
 					Action: commands.ClusterHdfsCpout,
 				},
 				{

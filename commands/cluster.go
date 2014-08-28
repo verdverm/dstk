@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/codegangsta/cli"
 
@@ -35,6 +36,7 @@ func CreateCluster(c *cli.Context) {
 			ccfg.Name = cname
 			ccfg.Type = "docker"
 			ccfg.Status = "HALTED"
+			ccfg.Domain = "iassic.com"
 
 			cluster.WriteClusterConfig(cname, ccfg)
 			CONFIG.Clusters[cname] = ccfg
@@ -50,6 +52,7 @@ func CreateCluster(c *cli.Context) {
 
 		ccfg.Tool = tool
 		ccfg.Nodes = make([]string, 0, CONFIG.Nodes)
+		ccfg.NodesIps = make([]string, 0, CONFIG.Nodes)
 		for i := 0; i < CONFIG.Nodes; i++ {
 			ccfg.Nodes = append(ccfg.Nodes, fmt.Sprintf("dstk-node-%02d", i))
 		}
@@ -65,6 +68,56 @@ func CreateCluster(c *cli.Context) {
 		fmt.Println("provider", prov, "unknown")
 		return
 	}
+}
+
+func exec_command(program string, args ...string) {
+	cmd := exec.Command(program, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		fmt.Printf("%v\n", err)
+	}
+}
+
+func WriteClusterHosts(c *cli.Context) {
+
+	var add_hosts_script_begin = `cat << EOF | sudo tee -a /etc/hosts
+`
+
+	var add_hosts_script_end = `EOF`
+
+	cname := c.GlobalString("clustername")
+	if len(c.Args()) == 1 {
+		cname = c.Args()[0]
+	}
+	ccfg, ok := CONFIG.Clusters[cname]
+	if !ok {
+		panic("Unknown cluster " + cname)
+	}
+
+	println("adding", cname, "hosts")
+
+	add_hosts_list := "\n# dstk nodes for cluster: " + cname + "\n"
+	for i, N := range ccfg.Nodes {
+		add_hosts_list += fmt.Sprintf("%s %s %s\n", ccfg.NodesIps[i], N+".iassic.com", N)
+	}
+
+	add_hosts_script := fmt.Sprintf("%s%s%s\n\n", add_hosts_script_begin, add_hosts_list, add_hosts_script_end)
+
+	exec_command("/bin/bash", "-c", add_hosts_script)
+}
+
+func RemoveClusterHosts(c *cli.Context) {
+	cname := c.GlobalString("clustername")
+	if len(c.Args()) == 1 {
+		cname = c.Args()[0]
+	}
+	println("removing", cname, "hosts")
+
+	remove_hosts_script := "cat /etc/hosts | grep -v " + cname + " | sudo tee /etc/hosts"
+	exec_command("/bin/bash", "-c", remove_hosts_script)
 }
 
 func StartCluster(c *cli.Context) {
@@ -291,7 +344,17 @@ func ClusterHdfsCpin(c *cli.Context) {
 		panic("Couldn't find cluster in ClusterMap")
 	}
 
-	cluster.DockerHdfsCpin(ccfg)
+	path, filename := "", ""
+	if len(c.Args()) == 2 {
+		filename = c.Args()[0]
+		path = c.Args()[1]
+	} else {
+		fmt.Println("Please specify what to list")
+		return
+	}
+
+	cluster.DockerHdfsCpin(path, filename, ccfg)
+
 }
 
 func ClusterHdfsCpout(c *cli.Context) {
@@ -301,7 +364,16 @@ func ClusterHdfsCpout(c *cli.Context) {
 	if !ok {
 		panic("Couldn't find cluster in ClusterMap")
 	}
-	cluster.DockerHdfsCpout(ccfg)
+	path, filename := "", ""
+	if len(c.Args()) == 2 {
+		path = c.Args()[0]
+		filename = c.Args()[1]
+	} else {
+		fmt.Println("Please specify what to list")
+		return
+	}
+
+	cluster.DockerHdfsCpout(path, filename, ccfg)
 }
 
 func ClusterHdfsMv(c *cli.Context) {

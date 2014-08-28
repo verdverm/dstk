@@ -9,6 +9,7 @@ import (
 type ClusterConfig struct {
 	Type    string
 	Name    string
+	Domain  string
 	DataDir string
 
 	Tool       string
@@ -16,6 +17,7 @@ type ClusterConfig struct {
 	MasterHost string
 	MasterPort string
 	Nodes      []string
+	NodesIps   []string
 }
 
 func ReadClusterConfig(name string) *ClusterConfig {

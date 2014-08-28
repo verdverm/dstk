@@ -51,22 +51,21 @@ func LaunchDockerAmbariCommand(cmd string, ccfg *ClusterConfig) {
 func LaunchDockerCluster(ccfg *ClusterConfig) {
 	switch ccfg.Tool {
 	case "hadoop", "spark":
-		LaunchDockerHadoopCluster(len(ccfg.Nodes))
-		ccfg.MasterHost = MASTERIP
-		ccfg.MasterPort = "8080"
+		LaunchDockerHadoopCluster(ccfg)
 
 	default:
 		panic("Unknown tool type")
 	}
 }
 
-func LaunchDockerHadoopCluster(numnodes int) {
+func LaunchDockerHadoopCluster(ccfg *ClusterConfig) {
 	fmt.Println("Launching local docker hadoop cluster:")
 
+	numnodes := len(ccfg.Nodes)
 	// launchDockerDatabases()
-	launchDockerHadoopFirst()
+	launchDockerHadoopFirst(ccfg)
 	for i := 1; i < numnodes; i++ {
-		launchDockerHadoopNode(i)
+		launchDockerHadoopNode(i, ccfg)
 	}
 
 	wait := 10
@@ -237,13 +236,9 @@ func launchDockerNeo4j() {
 	fmt.Println("  - Successfully started Neo4j docker")
 }
 
-var MASTERIP = ""
-
-// var BLUEPRINT = "myblueprint"
-
 var BLUEPRINT = "multi-node-hdfs-yarn"
 
-func launchDockerHadoopFirst() {
+func launchDockerHadoopFirst(ccfg *ClusterConfig) {
 	name := fmt.Sprintf("dstk-node-%02d", 0)
 
 	// create options
@@ -256,7 +251,6 @@ func launchDockerHadoopFirst() {
 			CpuShares:  4,
 			Hostname:   name,
 			Domainname: "iassic.com",
-			// Dns:        []string{"127.0.0.1"},
 			ExposedPorts: map[docker.Port]struct{}{
 				docker.Port("8080"): {},
 				docker.Port("7373"): {},
@@ -290,10 +284,13 @@ func launchDockerHadoopFirst() {
 
 	cont, err := client.InspectContainer(name)
 	panicErr(err)
-	MASTERIP = cont.NetworkSettings.IPAddress
+	ccfg.MasterHost = cont.NetworkSettings.IPAddress
+	ccfg.MasterPort = "8080"
+	ccfg.NodesIps[0] = ccfg.MasterHost
+
 }
 
-func launchDockerHadoopNode(id int) {
+func launchDockerHadoopNode(id int, ccfg *ClusterConfig) {
 	name := fmt.Sprintf("dstk-node-%02d", id)
 
 	// create options
@@ -306,14 +303,13 @@ func launchDockerHadoopNode(id int) {
 			CpuShares:  4,
 			Hostname:   name,
 			Domainname: "iassic.com",
-			// Dns:        []string{"127.0.0.1"},
 			ExposedPorts: map[docker.Port]struct{}{
 				docker.Port("8080"): {},
 				docker.Port("7373"): {},
 				docker.Port("7946"): {},
 			},
 			Env: []string{
-				"SERF_JOIN_IP=" + MASTERIP,
+				"SERF_JOIN_IP=" + ccfg.MasterHost,
 			},
 		},
 	}
@@ -337,6 +333,10 @@ func launchDockerHadoopNode(id int) {
 	panicErr(err)
 
 	fmt.Println("  - Successfully started", name, "docker")
+
+	cont, err := client.InspectContainer(name)
+	panicErr(err)
+	ccfg.NodesIps[id] = cont.NetworkSettings.IPAddress
 }
 
 func installDockerHadoopCluster(numnodes int) {
@@ -377,14 +377,6 @@ func installDockerHadoopCluster(numnodes int) {
 	panicErr(err)
 
 	fmt.Println("  - Successfully started", name, "docker")
-
-	// ropts := docker.RemoveContainerOptions{
-	// 	ID:    name,
-	// 	Force: true,
-	// }
-	// err = client.RemoveContainer(ropts)
-	// panicErr(err)
-
 }
 
 func destroyDocker(name string) {
@@ -408,14 +400,17 @@ func DockerHdfsLs(dir string, ccfg *ClusterConfig) {
 	exec_command("/bin/bash", "-c", cmd)
 }
 
-func DockerHdfsCpin(ccfg *ClusterConfig) {
-
+func DockerHdfsCpin(path, filename string, ccfg *ClusterConfig) {
+	cmd := "curl -X PUT -L 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
+		path + "?user.name=hdfs&op=CREATE&permission=0644' -T " + filename + "| jq '.'"
+	exec_command("/bin/bash", "-c", cmd)
 }
-func DockerHdfsCpout(ccfg *ClusterConfig) {
-
+func DockerHdfsCpout(path, filename string, ccfg *ClusterConfig) {
+	cmd := "curl -L 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
+		path + "?user.name=hdfs&op=OPEN' > " + filename
+	exec_command("/bin/bash", "-c", cmd)
 }
 func DockerHdfsMv(src, dest string, ccfg *ClusterConfig) {
-	fmt.Println("HDFS MV: ", src, dest)
 	cmd := "curl -s -X PUT 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
 		src + "?user.name=hdfs&op=RENAME&destination=" + dest + "' | jq '.'"
 	exec_command("/bin/bash", "-c", cmd)
