@@ -33,9 +33,11 @@ var (
 )
 
 func SparkSubmit() {
-	// rest := fmt.Sprintf("sudo docker-enter dstk-node-00 /tmp/spark-submit.sh")
-	// exec_command("/bin/bash", "-c", rest)
+	// build user directory with docker
 
+	// copy jar to hdfs
+
+	// run spark submit script
 	exec_command("/bin/bash", "-c", "sudo docker-enter dstk-node-00 /tmp/spark-submit.sh")
 
 }

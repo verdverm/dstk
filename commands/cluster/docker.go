@@ -62,6 +62,7 @@ func LaunchDockerHadoopCluster(ccfg *ClusterConfig) {
 	fmt.Println("Launching local docker hadoop cluster:")
 
 	numnodes := len(ccfg.Nodes)
+	ccfg.NodesIps = make([]string, numnodes)
 	// launchDockerDatabases()
 	launchDockerHadoopFirst(ccfg)
 	for i := 1; i < numnodes; i++ {
@@ -408,6 +409,7 @@ func DockerHdfsCpin(path, filename string, ccfg *ClusterConfig) {
 func DockerHdfsCpout(path, filename string, ccfg *ClusterConfig) {
 	cmd := "curl -L 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
 		path + "?user.name=hdfs&op=OPEN' > " + filename
+	println(cmd)
 	exec_command("/bin/bash", "-c", cmd)
 }
 func DockerHdfsMv(src, dest string, ccfg *ClusterConfig) {
@@ -432,6 +434,7 @@ func DockerHdfsChmod(dir, perm string, ccfg *ClusterConfig) {
 }
 func DockerHdfsChown(dir, owner, group string, ccfg *ClusterConfig) {
 	cmd := "curl -s -X PUT 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
-		dir + "?user.name=hdfs&op=SETOWN&owner=" + owner + "&group=" + group + "' | jq '.'"
+		dir + "?user.name=hdfs&op=SETOWNER&owner=" + owner + "&group=" + group + "' | jq '.'"
+	println(cmd)
 	exec_command("/bin/bash", "-c", cmd)
 }

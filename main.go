@@ -28,13 +28,13 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:   "clustername,c",
-			Value:  "default",
+			Value:  "test",
 			Usage:  "cluster name",
 			EnvVar: "DTSK_CLUSTER",
 		},
 		cli.StringFlag{
 			Name:   "jobname,j",
-			Value:  "default",
+			Value:  "default_job",
 			Usage:  "cluster name",
 			EnvVar: "DTSK_CLUSTER",
 		},
@@ -179,29 +179,28 @@ func main() {
 			},
 		},
 		{
-			Name:  "jobs",
-			Usage: "options for jobs management",
+			Name:  "app",
+			Usage: "options for dstk apps",
 			Subcommands: []cli.Command{
 				{
+					Name:   "create",
+					Usage:  "dstk app create <name> <args...?>",
+					Action: commands.CreateDstkApp,
+				},
+				{
+					Name:   "build",
+					Usage:  "dstk app build - builds the current directory",
+					Action: commands.BuildDstkApp,
+				},
+				{
+					Name:   "upload",
+					Usage:  "dstk app upload - uploads the current directory",
+					Action: commands.UploadDstkApp,
+				},
+				{
 					Name:   "run",
-					Usage:  "jobs run cmd args...",
-					Action: commands.RunClusterJob,
-				},
-				{
-					Name:  "stop",
-					Usage: "jobs stop <jobname>",
-					Action: func(c *cli.Context) {
-						cluster_name := c.GlobalString("clustername")
-						job_name := c.Args().First()
-						println("stopping", job_name, "(", job_name, ")on", cluster_name)
-					},
-				},
-				{
-					Name:  "status",
-					Usage: "jobs status <clustername>",
-					Action: func(c *cli.Context) {
-						println("jobs status <clustername>")
-					},
+					Usage:  "dstk app run <appname> <classpath> <appargs...>",
+					Action: commands.RunDstkApp,
 				},
 			},
 		},

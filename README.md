@@ -28,19 +28,29 @@ Some third party codes in use:
 - verdverm/dstk-spark docker is derived from sequenciq/ambari.
 
 
+### CLI help command
+
+is most likely the most up-to-date source right now.
+
+`dstk help`
+`dstk <command> help`
+
+
 ### Launch a Hadoop/Yarn/Spark cluster
 
-`dtsk cluster create hadoop <name>`
+`dtsk cluster create hadoop <clustername>`
+`dstk addhosts <clustername>`
 
 The cluster has a hadoop2.5/yarn setup with a Spark on Hadoop2 binary included.
 
 ### Teardown a Cluster
 
-`dstk cluster destroy <name>`
+`dstk removehosts <clustername>`
+`dstk cluster destroy <clustername>`
 
 ### Get Cluster Status
 
-`dstk cluster status <name>`
+`dstk cluster status <clustername>`
 
 Not overly informative at this point, but the master IP is there.
 

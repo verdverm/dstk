@@ -468,8 +468,8 @@ func ClusterHdfsChown(c *cli.Context) {
 	group := ""
 	if len(c.Args()) == 3 {
 		dir = c.Args()[0]
-		dir = c.Args()[1]
-		dir = c.Args()[2]
+		owner = c.Args()[1]
+		group = c.Args()[2]
 	} else {
 		fmt.Println("Usage: dstk -c <clustername> hdfs chown <dir> <owner> <group>")
 		return
