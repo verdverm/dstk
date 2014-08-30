@@ -31,7 +31,14 @@ object WordCount {
     val counts = file.flatMap(line => line.split(" "))
                      .map(word => (word, 1))
                      .reduceByKey((a, b) => a + b)
-    counts.saveAsTextFile("hdfs:///user/root/wc/out.txt")
+                     // .collect()
+
+    val swapped = counts.map(item => item.swap)
+    val sorted = swapped.sortByKey(false) // false == descening order
+    val top = sorted.take(100)
+
+    val results = spark.parallelize(top)
+    results.saveAsTextFile(args(1))
 
     spark.stop()
   }

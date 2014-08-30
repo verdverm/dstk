@@ -5,11 +5,11 @@ ADD scala-2.11.2 /usr/lib/scala
 ENV SCALA_HOME /usr/lib/scala
 ENV PATH $PATH:/usr/lib/scala/bin:
 
-RUN mkdir -p /jobs/usercode
-# RUN cp scala-library.jar /jobs/scala-library.jar
+RUN mkdir -p /app/usercode
+# RUN cp scala-library.jar /app/scala-library.jar
 
-ADD scripts /jobs/scripts
+ADD scripts /app/scripts
 
-VOLUME ["/jobs/usercode"]
+VOLUME ["/app/usercode"]
 
-ENTRYPOINT ["/jobs/scripts/main.sh"]
+ENTRYPOINT ["/app/scripts/main.sh"]

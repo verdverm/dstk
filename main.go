@@ -194,7 +194,7 @@ func main() {
 				},
 				{
 					Name:   "upload",
-					Usage:  "dstk app upload - uploads the current directory",
+					Usage:  "dstk app upload <clustername>- uploads the current directory",
 					Action: commands.UploadDstkApp,
 				},
 				{

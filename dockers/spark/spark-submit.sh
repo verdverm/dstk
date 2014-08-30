@@ -13,21 +13,43 @@ echo $PATH
 
 sparkbinary=/apache/spark-1.0.2-bin-hadoop2/bin/spark-submit
 
+APPNAME=$1
+CLASSNAME=$2
+
+echo $1
+echo $2
+
+shift
+shift
+
+echo $@
+
 
 cd /tmp
-curl -L 'http://172.17.0.209:50070/webhdfs/v1/user/root/wordcount.jar?user.name=hdfs&op=OPEN' > wordcount.jar
+curl -L 'http://172.17.0.209:50070/webhdfs/v1/user/root/apps/$APPNAME.jar?user.name=hdfs&op=OPEN' > ${APPNAME}.jar
+# curl -L 'http://172.17.0.209:50070/webhdfs/v1/user/root/apps/wordcount.jar?user.name=hdfs&op=OPEN' > wordcount.jar
 
-
- $sparkbinary --class wordcount.WordCount \
+ $sparkbinary --class ${CLASSNAME} \
     --verbose \
     --master yarn-cluster \
     --num-executors 2 \
     --driver-memory 1g \
     --executor-memory 1g \
     --executor-cores 1 \
-    wordcount.jar
+    ${APPNAME}.jar $@
+
+# cd /tmp
+# curl -L 'http://172.17.0.209:50070/webhdfs/v1/user/root/wordcount.jar?user.name=hdfs&op=OPEN' > wordcount.jar
 
 
+#  $sparkbinary --class wordcount.WordCount \
+#     --verbose \
+#     --master yarn-cluster \
+#     --num-executors 2 \
+#     --driver-memory 1g \
+#     --executor-memory 1g \
+#     --executor-cores 1 \
+#     wordcount.jar
 
 
 # cd /apache/spark-1.0.2-bin-hadoop2

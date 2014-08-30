@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /jobs/usercode
+cd /app/usercode
 
 if [ ! -f scala-library.jar ]
 then
@@ -14,11 +14,11 @@ fi
 
 
 echo "compiling scala"
-scalac -cp "*.jar" -sourcepath src -d bin src/wordcount/WordCount.scala
+scalac -cp "*.jar" -sourcepath src -d bin "/app/usercode/src/$APPNAME/$APPNAME.scala"
 
 echo "linking jars"
 cd bin
-jar -cfm ../wordcount.jar ../MANIFEST.MF *
+jar -cfm ../$APPNAME.jar ../MANIFEST.MF *
 cd ..
 
 # echo "Press [CTRL+C] to stop.."

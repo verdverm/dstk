@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-# printf "dstk - jobs - main.sh\n\n"
+printf "dstk - app - main.sh\n\n"
 
 # echo $PATH
 
@@ -9,6 +9,6 @@
 
 # ls -la /jobs/usercode
 
-/jobs/scripts/build-scala.sh
+# /app/scripts/build-scala.sh
 
 printf "\n\n"

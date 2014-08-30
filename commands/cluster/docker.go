@@ -404,6 +404,7 @@ func DockerHdfsLs(dir string, ccfg *ClusterConfig) {
 func DockerHdfsCpin(path, filename string, ccfg *ClusterConfig) {
 	cmd := "curl -X PUT -L 'http://" + ccfg.MasterHost + ":50070/webhdfs/v1" +
 		path + "?user.name=hdfs&op=CREATE&permission=0644' -T " + filename + "| jq '.'"
+	println(cmd)
 	exec_command("/bin/bash", "-c", cmd)
 }
 func DockerHdfsCpout(path, filename string, ccfg *ClusterConfig) {
