@@ -1,10 +1,24 @@
 dstk - Data Science ToolKit
 ===========================
 
-A tool for using other data science tools,
-built on Docker and Hadoop.
+A tool for simplifying data science tasks,
+built on Docker, Hadoop, Spark...
 
-It's a little rough right now, expect things to change.
+Right now you can:
+
+- Create and run a local Hadoop2 / Yarn / Spark, docker based cluster.
+- Build, upload, and run Spark applications in Scala.
+- Perform many hdfs functions.
+
+It's a little early right now, expect things to change.
+
+### Help command
+
+is most likely the most up-to-date source for command usage.
+Don't quote me though.
+
+`dstk help`
+`dstk <command> help`
 
 ### Installing
 
@@ -24,24 +38,18 @@ Some third party codes in use:
 - [github.com/codegangsta/cli](https://github.com/codegangsta/cli)
 - [github.com/fsouza/go-dockerclient](https://github.com/fsouza/go-dockerclient)
 - [github.com/jpetazzo/nsenter](https://github.com/jpetazzo/nsenter)
-- several from [github.com/sequenceiq](https://github.com/sequenceiq)
-- verdverm/dstk-spark docker is derived from sequenciq/ambari.
+- [github.com/sequenceiq/...](https://github.com/sequenceiq)
+- `verdverm/dstk-spark` docker is derived from `sequenciq/ambari`.
 
 
-### CLI help command
-
-is most likely the most up-to-date source right now.
-
-`dstk help`
-`dstk <command> help`
-
+## Cluster Commands
 
 ### Launch a Hadoop/Yarn/Spark cluster
 
 `dtsk cluster create hadoop <clustername>`
 `dstk addhosts <clustername>`
 
-The cluster has a hadoop2.5/yarn setup with a Spark on Hadoop2 binary included.
+The cluster has a Hadoop2.5 / Yarn setup, with a Spark 1.0.2 on Hadoop2 binary included.
 
 ### Teardown a Cluster
 
@@ -53,6 +61,16 @@ The cluster has a hadoop2.5/yarn setup with a Spark on Hadoop2 binary included.
 `dstk cluster status <clustername>`
 
 Not overly informative at this point, but the master IP is there.
+
+### Add and Remove hostnames
+
+These commands will add hostname / ip information to your `/etc/hosts` file.
+This is necessary for some of the`hdfs` functions and useful for the WebUI.
+
+`dstk addhosts <clustername>`
+`dstk removehosts <clustername>`
+
+I think removehosts is broken right now...
 
 ### Open Ambari WebUI
 
@@ -71,14 +89,43 @@ requires sudo access for `docker-enter (nsenter)`.
 
 `dstk -c <clustername> cluster ambari`
 
-### Run the SparkPi example
 
-`dstk -c <clustername> -j <jobname> jobs run <command>`
+## App Commands
 
-currently the command is ignored... sorry.
-It's hardcoded to run the SparkPi example temporarily.
+### Build an app
 
-### TODO
+Directory layout should be
+```
+appname
+  \ src
+    \ appname
+      - appname.scala
+  - MANIFEST.MF
+```
+
+From the appname directory, run `dstk app build`
+
+### Upload to a cluster
+
+From the appname directory, run `dstk app upload <clustername>`
+
+### Run an application
+
+From anywhere, run
+
+`dstk -c <clustername> app run <appname> <appclass> <appargs...>`
+
+To run the wordcount example
+
+`dstk -c <clustername> app run wordcount wordcount.WordCount /user/root/in.txt /user/root/out.txt`
+
+Output can be obtained by running
+
+`dstk -c <clustername> hdfs cpout /user/root/in.txt/part-00000 out0.txt`
+`dstk -c <clustername> hdfs cpout /user/root/in.txt/part-00001 out1.txt`
+
+
+# TODO
 
 Help out! Here are some things that need doing
 
