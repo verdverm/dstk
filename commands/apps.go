@@ -15,15 +15,13 @@ import (
 
 func CreateDstkApp(c *cli.Context) {
 	// cname := c.GlobalString("clustername")
-	// var tool string
-	// if len(c.Args()) == 1 {
-	// 	tool = c.Args()[0]
-	// } else if len(c.Args()) == 2 {
-	// 	tool = c.Args()[0]
-	// 	cname = c.Args()[1]
-	// } else {
-	// 	fmt.Println("Error: bad args to CreateDsktApp")
-	// }
+	var appname string
+	if len(c.Args()) == 1 {
+		appname = c.Args()[0]
+	} else {
+		fmt.Println("Error: bad args to CreateDsktApp")
+	}
+	app.CreateDstkScalaSparkApp(appname)
 }
 
 func BuildDstkApp(c *cli.Context) {

@@ -28,10 +28,10 @@ object WordCount {
     val spark = new SparkContext(conf)
 
     val file = spark.textFile(args(0))
+
     val counts = file.flatMap(line => line.split(" "))
                      .map(word => (word, 1))
                      .reduceByKey((a, b) => a + b)
-                     // .collect()
 
     val swapped = counts.map(item => item.swap)
     val sorted = swapped.sortByKey(false) // false == descening order
